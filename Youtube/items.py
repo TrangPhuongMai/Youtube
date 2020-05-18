@@ -22,6 +22,7 @@ class Youtubecomments(scrapy.Item):
     videoId = scrapy.Field()
     authorDisplayName = scrapy.Field()
     authorChannelUrl = scrapy.Field()
+    textOriginal = scrapy.Field()
     publishedAt = scrapy.Field()
     updatedAt = scrapy.Field()
     likeCount = scrapy.Field()

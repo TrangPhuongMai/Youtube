@@ -2,68 +2,107 @@
 import scrapy
 from scrapy.http import Request
 from scrapy.loader import ItemLoader
-from Youtube.items import YoutubeItem,Youtubecomments
+from Youtube.items import YoutubeItem, Youtubecomments
 import pandas as pd
 from googleapiclient.discovery import build
 import logging
+from datetime import datetime, timezone ,timedelta
 import time
 
 logging.getLogger('googleapicliet.discovery_cache').setLevel(logging.ERROR)
 
+
 class YtSpider(scrapy.Spider):
     name = 'yt'
     start_urls = ['https://www.youtube.com/watch?v=']
-    api_key = ['AIzaSyBzQNqpBOWU-LPLueKelT4Iw8aA4RF2yNY']
-    cities = pd.read_csv('/home/nero/PycharmProjects/Youtube/Youtube/test.csv')
-    max_comments = 20
-    max_videos = 1
+    api_key = ['AIzaSyDwggcI8lsjGuKhRdUrXwGN6kOhK8SvLic']
+    cities = pd.read_csv('/home/nero/PycharmProjects/Youtube/Youtube/test.csv', header=None)
+
+    def __init__(self,*args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if 'date' in kwargs:
+            self.date = self.date
+        else:
+            d1 = datetime.now(timezone.utc).astimezone()
+            d2 = timedelta(days=20)
+            self.date = d1 - d2
+
+        if 'max_videos' not in kwargs:
+            self.max_videos = 20
+
+        if 'max_comments' not in kwargs:
+            self.max_comments = 0
 
     def parse(self, response):
 
         for key in self.api_key:
-            yt = build('youtube', 'v3', developerKey=key,cache_discovery=False)
-            cities = pd.read_csv('/home/nero/PycharmProjects/Youtube/Youtube/b.csv', header=None)
+            yt = build('youtube', 'v3', developerKey=key, cache_discovery=False)
 
-            for city in cities[0]:
+            # cities = pd.read_csv('/home/nero/PycharmProjects/Youtube/Youtube/b.csv', header=None)
+
+            for city in self.cities[0]:
 
                 logging.info('++++++++++++++++++ {} ++++++++++++++++++'.format(city))
-                search = yt.search().list(q='{}'.format(city),part='snippet',maxResults=self.max_videos,type='video').execute()
+                # publishedBefore
+                search = yt.search().list(q='{}'.format(city), part='snippet', maxResults=self.max_videos, type='video',
+                                          publishedBefore=self.date).execute()
                 for i in range(len(search['items'])):
                     # get basic snippet data
                     l = ItemLoader(item=YoutubeItem(), response=response)
-                    l.add_value('city',city)
-                    l.add_value('videoId',str(search['items'][i]['id']['videoId']))
-                    l.add_value('title',str(search['items'][i]['snippet']['title']))
-                    l.add_value('datetime',str(search['items'][i]['snippet']['publishedAt']))
-                    l.add_value('description',str(search['items'][i]['snippet']['description']))
-                    l.add_value('channelId',str(search['items'][i]['snippet']['channelId']))
-                    statistic = yt.videos().list(id='{}'.format(search['items'][i]['id']['videoId']),part='statistics').execute()
+                    l.add_value('city', city)
+                    l.add_value('videoId', str(search['items'][i]['id']['videoId']))
+                    l.add_value('title', str(search['items'][i]['snippet']['title']))
+                    l.add_value('datetime', str(search['items'][i]['snippet']['publishedAt']))
+                    l.add_value('description', str(search['items'][i]['snippet']['description']))
+                    l.add_value('channelId', str(search['items'][i]['snippet']['channelId']))
+                    statistic = yt.videos().list(id='{}'.format(search['items'][i]['id']['videoId']),
+                                                 part='statistics').execute()
 
+                    # filter for null value in case the video have no like or dislike
                     try:
-                        l.add_value('like',statistic['items'][0]['statistics']['likeCount'])
-                    except :
-                        l.add_value('like','0')
+                        l.add_value('like', statistic['items'][0]['statistics']['likeCount'])
+                    except:
+                        l.add_value('like', '0')
                     try:
-                        l.add_value('dislike',statistic['items'][0]['statistics']['dislikeCount'])
-                    except :
-                        l.add_value('dislike','0')
+                        l.add_value('dislike', statistic['items'][0]['statistics']['dislikeCount'])
+                    except:
+                        l.add_value('dislike', '0')
                     yield l.load_item()
 
-                    comments = yt.commentThreads().list(videoId=str(search['items'][i]['id']['videoId']),part='snippet',maxResults=self.max_comments).execute()
-                    c = ItemLoader(item=Youtubecomments(),response=response)
-                    c.add_value('videoId',str(search['items'][i]['id']['videoId']))
-                    for i in range(len(comments['items']))
-                        c.add_value('authorDisplayName',str(comments['items'][i]['snippet']['topLevelComment']['snippet']['authorDisplayName']))
-                        c.add_value('authorChannelUrl',str(comments['items'][i]['snippet']['topLevelComment']['snippet']['authorChannelUrl']))
-                        c.add_value('publishedAt',str(comments['items'][i]['snippet']['topLevelComment']['snippet']['publishedAt']))
-                        c.add_value('updatedAt',str(comments['items'][i]['snippet']['topLevelComment']['snippet']['updatedAt']))
-                        c.add_value('likeCount',str(comments['items'][i]['snippet']['topLevelComment']['snippet']['likeCount']))
-                        c.add_value('totalReplyCount',str(comments['items'][i]['snippet']['topLevelComment']['snippet']['totalReplyCount']))
+                    try:  # avoid some video that has comments disable
+                        comments = yt.commentThreads().list(videoId=str(search['items'][i]['id']['videoId']),
+                                                            part='snippet', maxResults=self.max_comments).execute()
+                        c = ItemLoader(item=Youtubecomments(), response=response)
+                        c.add_value('videoId', str(search['items'][i]['id']['videoId']))
+                        if len(comments['items']) != 0:
+                            c.add_value('authorDisplayName', str(
+                                comments['items'][i]['snippet']['topLevelComment']['snippet']['authorDisplayName']))
+                            c.add_value('authorChannelUrl', str(
+                                comments['items'][i]['snippet']['topLevelComment']['snippet']['authorChannelUrl']))
+                            c.add_value('textOriginal', str(
+                                comments['items'][i]['snippet']['topLevelComment']['snippet']['textOriginal']))
+                            c.add_value('publishedAt', str(
+                                comments['items'][i]['snippet']['topLevelComment']['snippet']['publishedAt']))
+                            c.add_value('updatedAt', str(
+                                comments['items'][i]['snippet']['topLevelComment']['snippet']['updatedAt']))
+                            c.add_value('likeCount', str(
+                                comments['items'][i]['snippet']['topLevelComment']['snippet']['likeCount']))
+                            c.add_value('totalReplyCount', str(comments['items'][i]['snippet']['totalReplyCount']))
 
-
-
-
-
-
-
-
+                            for i in range(1, len(comments['items'])):
+                                c.replace_value('authorDisplayName', str(
+                                    comments['items'][i]['snippet']['topLevelComment']['snippet']['authorDisplayName']))
+                                c.replace_value('authorChannelUrl', str(
+                                    comments['items'][i]['snippet']['topLevelComment']['snippet']['authorChannelUrl']))
+                                c.replace_value('publishedAt', str(
+                                    comments['items'][i]['snippet']['topLevelComment']['snippet']['publishedAt']))
+                                c.replace_value('updatedAt', str(
+                                    comments['items'][i]['snippet']['topLevelComment']['snippet']['updatedAt']))
+                                c.replace_value('likeCount', str(
+                                    comments['items'][i]['snippet']['topLevelComment']['snippet']['likeCount']))
+                                c.replace_value('totalReplyCount',
+                                                str(comments['items'][i]['snippet']['totalReplyCount']))
+                                yield c.load_item()
+                    except:
+                        pass

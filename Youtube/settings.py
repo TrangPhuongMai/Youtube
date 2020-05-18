@@ -16,7 +16,9 @@ NEWSPIDER_MODULE = 'Youtube.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
+# desktop user agent (linux version)
 # USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36'
+# mobile user agent 
 USER_AGENT = 'Mozilla/5.0 (Linux; Android 7.0; SM-G930V Build/NRD90M) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.125 Mobile Safari/537.36'
 
 # Obey robots.txt rules
@@ -89,8 +91,8 @@ ITEM_PIPELINES = {
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
-# FEED_EXPORT_FIELDS  = ['city','videoId','title','datetime','description','like','dislike','channelId']
-FEED_EXPORT_FIELDS  = ['videoId','authorDisplayName','authorChannelUrl','publishedAt','updatedAt','likeCount','totalReplyCount']
+FEED_EXPORT_FIELDS  = ['city','videoId','title','datetime','description','like','dislike','channelId','videoId','authorDisplayName','authorChannelUrl','textOriginal','publishedAt','updatedAt','likeCount','totalReplyCount']
+# FEED_EXPORT_FIELDS  = ['videoId','authorDisplayName','authorChannelUrl','textOriginal','publishedAt','updatedAt','likeCount','totalReplyCount']
 URLLENGTH_LIMIT = 99999
 FEED_EXPORT_ENCODING = 'utf-8'
 DUPEFILTER_DEBUG = True
