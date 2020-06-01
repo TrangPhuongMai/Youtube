@@ -6,7 +6,8 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
-
+from Youtube.spiders import yt
+import time
 
 class YoutubeSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
@@ -23,7 +24,8 @@ class YoutubeSpiderMiddleware(object):
     def process_spider_input(self, response, spider):
         # Called for each response that goes through the spider
         # middleware and into the spider.
-
+        print('4565646546546545642*************************************')
+        time.sleep(5)
         # Should return None or raise an exception.
         return None
 
@@ -32,10 +34,21 @@ class YoutubeSpiderMiddleware(object):
         # it has processed the response.
 
         # Must return an iterable of Request, dict or Item objects.
-        for i in result:
-            yield i
+
+        print('4565646546546545642*************************************')
+        time.sleep(5)
+        try:
+            for i in result:
+                print('4565646546546545642*************************************')
+                time.sleep(5)    
+                yield i
+        except Exception as e:
+            process_spider_exception(response,result,spider)
+            print('4565646546546545642*************************************')
 
     def process_spider_exception(self, response, exception, spider):
+        y = yt
+        print('/////////////////////// {} ///////////////////////'.format(y.api_keys))
         # Called when a spider or process_spider_input() method
         # (from other spider middleware) raises an exception.
 

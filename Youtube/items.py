@@ -19,6 +19,7 @@ class YoutubeItem(scrapy.Item):
     channelId = scrapy.Field()
 
 class Youtubecomments(scrapy.Item):
+    c_id = scrapy.Field()
     videoId = scrapy.Field()
     authorDisplayName = scrapy.Field()
     authorChannelUrl = scrapy.Field()
