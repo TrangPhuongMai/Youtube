@@ -1,66 +1,15 @@
 # -*- coding: utf-8 -*-
 import scrapy
-from scrapy.http import Request
 from scrapy.loader import ItemLoader
 from Youtube.items import YoutubeItem, Youtubecomments
 import pandas as pd
 from googleapiclient.discovery import build
 import logging
 from datetime import datetime, timezone, timedelta
-from Youtube import middlewares
-import time
+
 
 logging.getLogger('googleapicliet.discovery_cache').setLevel(logging.ERROR)
 
-
-# def parse_comments(self, response, comments):
-#     c = ItemLoader(item=Youtubecomments(), response=response)
-#     print('''
-#     5555
-#     5555
-#     5555
-#     5555
-#     5555
-#     5555
-#     5555
-#     5555
-#     ''')
-#     c.add_value('videoId', str(search['items'][i]['id']['videoId']))
-#     if len(comments['items']) != 0:
-#         c.add_value('c_id', str(
-#             comments['items'][i]['id']))
-#         c.add_value('authorDisplayName', str(
-#             comments['items'][i]['snippet']['topLevelComment']['snippet']['authorDisplayName']))
-#         c.add_value('authorChannelUrl', str(
-#             comments['items'][i]['snippet']['topLevelComment']['snippet']['authorChannelUrl']))
-#         c.add_value('textOriginal', str(
-#             comments['items'][i]['snippet']['topLevelComment']['snippet']['textOriginal']))
-#         c.add_value('publishedAt', str(
-#             comments['items'][i]['snippet']['topLevelComment']['snippet']['publishedAt']))
-#         c.add_value('updatedAt', str(
-#             comments['items'][i]['snippet']['topLevelComment']['snippet']['updatedAt']))
-#         c.add_value('likeCount', str(
-#             comments['items'][i]['snippet']['topLevelComment']['snippet']['likeCount']))
-#         c.add_value('totalReplyCount', str(comments['items'][i]['snippet']['totalReplyCount']))
-#
-#         for i in range(1, len(comments['items'])):
-#             c.replace_value('c_id', str(
-#                 comments['items'][i]['id']))
-#             c.replace_value('authorDisplayName', str(
-#                 comments['items'][i]['snippet']['topLevelComment']['snippet']['authorDisplayName']))
-#             c.replace_value('authorChannelUrl', str(
-#                 comments['items'][i]['snippet']['topLevelComment']['snippet']['authorChannelUrl']))
-#             c.replace_value('textOriginal', str(
-#                 comments['items'][i]['snippet']['topLevelComment']['snippet']['textOriginal']))
-#             c.replace_value('publishedAt', str(
-#                 comments['items'][i]['snippet']['topLevelComment']['snippet']['publishedAt']))
-#             c.replace_value('updatedAt', str(
-#                 comments['items'][i]['snippet']['topLevelComment']['snippet']['updatedAt']))
-#             c.replace_value('likeCount', str(
-#                 comments['items'][i]['snippet']['topLevelComment']['snippet']['likeCount']))
-#             c.replace_value('totalReplyCount',
-#                             str(comments['items'][i]['snippet']['totalReplyCount']))
-#             yield c.load_item()
 
 class YtSpider(scrapy.Spider):
     # google account
@@ -69,12 +18,12 @@ class YtSpider(scrapy.Spider):
 
     name = 'yt'
     start_urls = ['https://www.youtube.com/watch?v=']
-    api_keys = ['AIzaSyA25T8oebmmPs5HYeDeiyHbWAOYaG6eM5I',
+    api_keys = ['AIzaSyBREPBtLKhavxntw_kg2semlyolUn_LaQg', 'AIzaSyDUY5q8h1rvWNDrc2f1k-kfi4JK5-PcF2M',
+                'AIzaSyAqhmWNHQNE3W8TJJiw4edu79g7GfNjQpg',
+                'AIzaSyBm8YFvQeHBDVgcrBb4CCApyrBsY2R6nyg', 'AIzaSyA25T8oebmmPs5HYeDeiyHbWAOYaG6eM5I',
+                'AIzaSyDSrbgpw30IFVg9U0dFps_iSzlbS-TTEsg',
+                'AIzaSyC1tFmlqlLJyomJrFKxUvXPh3Sad6iCOT0']
 
-               # 'AIzaSyDSrbgpw30IFVg9U0dFps_iSzlbS-TTEsg',
-               'AIzaSyC1tFmlqlLJyomJrFKxUvXPh3Sad6iCOT0']
-    # api_keys = ['AIzaSyA25T8oebmmPs5HYeDeiyHbWAOYaG6eM5I',
-    #             'AIzaSyDSrbgpw30IFVg9U0dFps_iSzlbS-TTEsg']
 
     cities = pd.read_csv('/home/nero/PycharmProjects/Youtube/Youtube/test.csv', header=None)
 
@@ -100,10 +49,6 @@ class YtSpider(scrapy.Spider):
         api = self.api_keys[self.flag]
         # for key in self.api_key:
         yt = build('youtube', 'v3', developerKey=api, cache_discovery=False)
-        # ------- Exceptions -------
-        # ------- Exceptions -------
-
-        # cities = pd.read_csv('/home/nero/PycharmProjects/Youtube/Youtube/b.csv', header=None)
 
         for city in self.cities[0]:
 
@@ -120,20 +65,14 @@ class YtSpider(scrapy.Spider):
                 self.flag += 1
                 yt = build('youtube', 'v3', developerKey=self.api_keys[self.flag], cache_discovery=False)
 
-                print('''
-                { ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ }
-                |
-                |
-                |
-                |
-                { ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ }
-                ''')
+                print("""
+                                            | quotaExceeded | {}
+                                            """.format(self.flag))
                 search = yt.search().list(q='{}'.format(city), part='snippet', maxResults=self.max_videos, type='video',
                                           publishedBefore=self.date).execute()
             # ------- Exceptions -------
 
             for i in range(len(search['items'])):
-                logging.info('++++++++++++++++++ {} ++++++++++++++++++'.format(len(search['items'])))
 
                 # get basic snippet data
                 l = ItemLoader(item=YoutubeItem(), response=response)
@@ -207,9 +146,11 @@ class YtSpider(scrapy.Spider):
                             print('''
                             | parameter has disabled comments |
                             ''')
-
                             pass
-                        elif 'quotaExceeded' in str(e):
+                        elif 'quota' in str(e):
+                        # else:
+                            print('+-+-+-+-+-+-+-+-++-+-+-++-+-{}-+-+-+-+-+-+-+-++--+-+'.format(e))
+                            print('+-+-+-+-+-+-+-+-++-+-+-++-+-{}-+-+-+-+-+-+-+-++--+-+'.format(self.flag))
                             print("""
                             | quotaExceeded |
                             """)
@@ -259,5 +200,5 @@ class YtSpider(scrapy.Spider):
                                     yield c.load_item()
 
 
-                except :
+                except:
                     pass
